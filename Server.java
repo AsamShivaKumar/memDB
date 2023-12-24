@@ -11,6 +11,7 @@ import data_structures.RList;
 import handlers.HashStoreHandler;
 import handlers.ListHandler;
 import handlers.SetHandler;
+import handlers.PubSubHandler;
 
 public class Server {
 	
@@ -21,9 +22,13 @@ public class Server {
     private final Aof aofObject = new Aof("data/db_file.txt");
 
     // handlers
-    HashStoreHandler hashStoreHandler = new HashStoreHandler(aofObject);
-    ListHandler listHandler = new ListHandler(aofObject);
-    SetHandler setHandler = new SetHandler(aofObject);
+    private final HashStoreHandler hashStoreHandler = new HashStoreHandler(aofObject);
+    private final ListHandler listHandler = new ListHandler(aofObject);
+    private final SetHandler setHandler = new SetHandler(aofObject);
+    private final PubSubHandler pubSubHandler = new PubSubHandler();
+
+    // client_port -> PrintWriter
+    private final Map<Integer, PrintWriter> clients = new HashMap<>();
 
     // backup boolean
     boolean backup = false;
@@ -74,7 +79,7 @@ public class Server {
                 Resp parser = new Resp(reader);
                 Value data = parser.read();
                 if(data.getType().equals("")) break;
-                handler(data);
+                handler(data, -1);
             }
 
             reader.close();
@@ -90,7 +95,7 @@ public class Server {
         return response;
     }
 
-    private Value handler(Value request){
+    private Value handler(Value request, int clientPort){
         if(!request.getType().equals("array")) return new Value("");
         Value[] req = request.getArray();
         String cmd = req[0].getBulk().toUpperCase();
@@ -132,6 +137,12 @@ public class Server {
                 return setHandler.smembers(request);
             case "SISMEMBER":
                 return setHandler.sismember(request);
+            case "SUBSCRIBE":
+                return pubSubHandler.subscribe(request, clientPort);
+            case "UNSUBSCRIBE":
+                return pubSubHandler.unsubscribe(request, clientPort);
+            case "PUBLISH":
+                return pubSubHandler.publish(request, clientPort, clients);
             default: return new Value("");
         }
     }
@@ -149,9 +160,11 @@ public class Server {
 
             // send reponse to client
             PrintWriter wr = new PrintWriter(client.getOutputStream());
-            Value response = handler(data);
+            clients.put(client.getPort(), wr);
+            Value response = handler(data, client.getPort());
             wr.write(response.serializeValue());
-            wr.close();
+
+            if(!data.getArray()[0].getBulk().toUpperCase().equals("SUBSCRIBE")) wr.close();
 			// client.close();
 			
 		} catch (IOException e) {
@@ -160,10 +173,10 @@ public class Server {
 		}
 	}
 
-    public static void main(String[] args) {
+    // public static void main(String[] args) {
 		
-		Server svr = new Server(6379);
-		svr.start();
-        // svr.stop();
-	}
+	// 	Server svr = new Server(6379);
+	// 	svr.start();
+    //     // svr.stop();
+	// }
 }

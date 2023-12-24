@@ -24,7 +24,6 @@ public class RList{
     }
 
     public Value rpush(Value request){
-        System.out.println("rpush here");
         Value[] req = request.getArray();
         if(req.length < 3) return new Value("num");
         

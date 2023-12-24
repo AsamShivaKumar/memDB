@@ -30,7 +30,6 @@ public class HashStoreHandler{
     }
     
     public Value set(Value request, boolean backup){
-        System.out.println("here -- set");
         Value[] req = request.getArray();
         if(req.length < 3 || !req[1].getType().equals("bulk") || !req[2].getType().equals("bulk")) return new Value("");
         
