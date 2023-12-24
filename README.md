@@ -1,7 +1,3 @@
-# Redis Server Implementation
-
-This is a simple Redis server implementation in Java, providing an in-memory database system to support key-value stores, lists, sets, and Pub/Sub functionality.
-
 ## Features
 
 - **Key-Value Stores:** Support for basic key-value store operations (SET, GET).
